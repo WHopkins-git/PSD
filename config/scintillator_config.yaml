@@ -1,0 +1,40 @@
+# Scintillator Configuration
+
+active_scintillator: "EJ-301"
+
+# Temperature corrections
+temperature_corrections:
+  enabled: true
+  reference_temperature: 20  # °C
+  apply_light_yield_correction: true
+  apply_decay_time_correction: false
+
+# Birks' law corrections
+birks_corrections:
+  enabled: true
+  apply_to_neutrons: true
+  apply_to_gammas: false
+
+# Custom scintillators (extends SCINTILLATOR_DATABASE)
+custom_scintillators:
+  MyCustomLiquid:
+    name: "My Custom Liquid Scintillator"
+    type: "organic_liquid"
+    light_yield: 75
+    light_yield_unit: "percent_anthracene"
+    decay_time_fast: 3.5
+    decay_time_slow: 35.0
+    fast_fraction: 0.65
+    rise_time: 1.0
+    psd_quality: "excellent"
+    fom_typical: 1.7
+    psd_mechanism: "singlet_triplet"
+    energy_resolution_662kev: 8.5
+    density: 0.88
+    h_c_ratio: 1.2
+    refractive_index: 1.50
+    birks_kB: 0.010
+    temp_coefficient_light: -0.2
+    temp_coefficient_decay: 0.1
+    emission_max: 425
+    comments: "Custom formulation optimized for fast neutrons"
