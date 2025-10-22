@@ -20,7 +20,7 @@ import seaborn as sns
 # Configure plotting
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
-%matplotlib inline
+# %matplotlib inline  # Uncomment in Jupyter notebook
 
 # %% [markdown]
 # ## 1. Load and Inspect Data

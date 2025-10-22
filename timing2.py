@@ -25,15 +25,14 @@ from psd_analysis import load_psd_data, validate_events, calculate_psd_ratio
 # - analyze_feature_correlations()
 # - production_workflow_with_timing_features()
 # - if __name__ == "__main__": block
-```
-
-### Option 2: Module with Examples
-
-Create a new directory for examples:
-```
-psd_analysis/
-├── examples/
-│   ├── __init__.py
-│   ├── timing_demo.py          # ← The code fragment goes here
-│   ├── ml_comparison.py         # Compare different ML methods
-│   └── feature_analysis.py      # Feature importance analysis
+#
+# ### Option 2: Module with Examples
+#
+# Create a new directory for examples:
+#
+# psd_analysis/
+# ├── examples/
+# │   ├── __init__.py
+# │   ├── timing_demo.py          # ← The code fragment goes here
+# │   ├── ml_comparison.py         # Compare different ML methods
+# │   └── feature_analysis.py      # Feature importance analysis
