@@ -1,0 +1,28 @@
+quality_control:
+  max_baseline_rms: 50
+  check_pileup: true
+  check_saturation: true
+
+spectroscopy:
+  peak_finding:
+    prominence: 100
+    distance: 20  # samples
+
+  peak_fitting:
+    fit_width_kev: 50
+    background_model: "linear"
+
+isotope_identification:
+  matching_tolerance_kev: 10
+  min_confidence: 0.7
+
+discrimination:
+  boundary_type: "linear"  # or "energy_dependent"
+  psd_range: [0, 1]
+
+output:
+  save_figures: true
+  figure_format: "png"
+  figure_dpi: 150
+  export_processed_data: true
+  export_format: "hdf5"  # or "csv"
