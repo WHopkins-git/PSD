@@ -91,92 +91,84 @@ def test_notebook_structure(filepath):
         return False
 
 def test_core_psd_algorithms():
-    """Test core PSD algorithm functionality."""
+    """Test core PSD algorithm functionality using actual package."""
     print("\n" + "="*70)
     print("TESTING CORE PSD ALGORITHMS")
     print("="*70)
 
     import numpy as np
+    import pandas as pd
 
-    # Test 1: Waveform generation
-    test_name = "Waveform generation (bi-exponential)"
+    # Import from actual package
     try:
-        def generate_pulse(n_samples=500, tau_fast=3.0, tau_slow=100.0, ratio=0.3):
-            t = np.arange(n_samples) * 2.0  # 2 ns sampling
-            A_fast = 1000 * (1 - ratio)
-            A_slow = 1000 * ratio
-            waveform = A_fast * np.exp(-t / tau_fast) + A_slow * np.exp(-t / tau_slow)
-            return waveform
+        from psd_analysis import calculate_psd_ratio, calculate_figure_of_merit
+        from psd_analysis import calibrate_energy, find_peaks_in_spectrum
+    except ImportError as e:
+        log_fail("Package import", f"Cannot import psd_analysis: {e}")
+        return
 
-        wf = generate_pulse()
-        assert len(wf) == 500, "Wrong waveform length"
-        assert wf[0] > wf[-1], "Waveform should decay"
-        assert np.all(wf >= 0), "Waveform should be positive"
+    # Test 1: PSD ratio calculation
+    test_name = "PSD ratio calculation (package function)"
+    try:
+        # Create test data
+        df = pd.DataFrame({
+            'ENERGY': [1000, 2000, 3000],
+            'ENERGYSHORT': [700, 1400, 2100]
+        })
+
+        df = calculate_psd_ratio(df)
+
+        assert 'PSD' in df.columns, "PSD column not created"
+        assert all(df['PSD'] >= 0), "PSD should be non-negative"
+        assert all(df['PSD'] <= 1), "PSD should be <= 1"
+        # PSD = (E - E_short) / E = (1000 - 700) / 1000 = 0.3
+        assert abs(df.loc[0, 'PSD'] - 0.3) < 0.01, "PSD calculation incorrect"
         log_pass(test_name)
     except Exception as e:
         log_fail(test_name, str(e))
 
-    # Test 2: Tail-to-total ratio calculation
-    test_name = "Tail-to-total ratio calculation"
-    try:
-        wf = generate_pulse()
-        total = np.sum(wf[:250])  # 0-500 ns
-        tail = np.sum(wf[25:250])  # 50-500 ns
-        psd = tail / total if total > 0 else 0
-
-        assert 0 <= psd <= 1, f"PSD should be in [0,1], got {psd}"
-        log_pass(test_name)
-    except Exception as e:
-        log_fail(test_name, str(e))
-
-    # Test 3: Figure of Merit calculation
-    test_name = "Figure of Merit calculation"
+    # Test 2: Figure of Merit calculation
+    test_name = "Figure of Merit calculation (package function)"
     try:
         # Generate gamma and neutron distributions
         psd_gamma = np.random.normal(0.15, 0.03, 1000)
         psd_neutron = np.random.normal(0.35, 0.04, 1000)
 
-        # Calculate FoM
-        mean_gamma = np.mean(psd_gamma)
-        mean_neutron = np.mean(psd_neutron)
-        std_gamma = np.std(psd_gamma)
-        std_neutron = np.std(psd_neutron)
-
-        separation = abs(mean_neutron - mean_gamma)
-        fwhm_gamma = 2.355 * std_gamma
-        fwhm_neutron = 2.355 * std_neutron
-        fom = separation / (fwhm_gamma + fwhm_neutron)
+        # Calculate FoM using package function
+        fom = calculate_figure_of_merit(psd_neutron, psd_gamma)
 
         assert fom > 0, "FoM should be positive"
         assert fom < 10, f"FoM seems unrealistically high: {fom}"
+        assert fom > 1.0, "FoM should be > 1 for well-separated distributions"
         log_pass(test_name)
     except Exception as e:
         log_fail(test_name, str(e))
 
-    # Test 4: Energy calibration
-    test_name = "Energy calibration (linear)"
+    # Test 3: Energy calibration
+    test_name = "Energy calibration (package function)"
     try:
-        # Known points: 662 keV Cs-137, 1173 keV Co-60
-        adc_values = np.array([662, 1173])
-        energy_values = np.array([662, 1173])
+        # Create test data
+        df = pd.DataFrame({
+            'ENERGY': [500, 1000, 1500, 2000],
+            'ENERGYSHORT': [350, 700, 1050, 1400]
+        })
 
-        # Linear fit
-        coeffs = np.polyfit(adc_values, energy_values, 1)
+        # Calibration points (ADC, keV)
+        calibration_points = [(500, 250), (2000, 1000)]
 
-        # Test calibration
-        test_adc = 1000
-        calibrated_energy = np.polyval(coeffs, test_adc)
+        df_cal, cal_func, params = calibrate_energy(df, calibration_points)
 
-        assert 900 < calibrated_energy < 1100, "Calibration seems off"
+        assert 'ENERGY_KEV' in df_cal.columns, "ENERGY_KEV column not created"
+        assert callable(cal_func), "Calibration function should be callable"
+        # Check calibration at known point: 500 ADC should be ~250 keV
+        assert abs(df_cal.loc[0, 'ENERGY_KEV'] - 250) < 10, "Calibration seems off"
         log_pass(test_name)
     except Exception as e:
         log_fail(test_name, str(e))
 
-    # Test 5: Peak finding
-    test_name = "Peak finding in spectrum"
+    # Test 4: Peak finding
+    test_name = "Peak finding in spectrum (package function)"
     try:
-        from scipy.signal import find_peaks
-
         # Generate spectrum with peak
         energies = np.concatenate([
             np.random.normal(662, 30, 1000),  # Photopeak
@@ -184,53 +176,77 @@ def test_core_psd_algorithms():
         ])
 
         counts, bins = np.histogram(energies, bins=200, range=(0, 800))
-        peaks, properties = find_peaks(counts, height=10, prominence=5)
+        bin_centers = (bins[:-1] + bins[1:]) / 2
+
+        peaks, peak_counts, properties = find_peaks_in_spectrum(
+            bin_centers, counts, prominence=10
+        )
 
         assert len(peaks) > 0, "Should find at least one peak"
         log_pass(test_name)
     except Exception as e:
         log_fail(test_name, str(e))
 
+    # Test 5: Data loading
+    test_name = "Data loader import"
+    try:
+        from psd_analysis import load_psd_data, validate_events
+        # Just test that imports work
+        assert callable(load_psd_data), "load_psd_data should be callable"
+        assert callable(validate_events), "validate_events should be callable"
+        log_pass(test_name)
+    except Exception as e:
+        log_fail(test_name, str(e))
+
 def test_ml_pipeline():
-    """Test machine learning pipeline."""
+    """Test machine learning pipeline using package classes."""
     print("\n" + "="*70)
     print("TESTING ML PIPELINE")
     print("="*70)
 
     import numpy as np
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import accuracy_score
+    import pandas as pd
 
-    # Test 1: Data preparation
-    test_name = "ML data preparation"
+    # Import from actual package
     try:
-        # Generate synthetic features
-        n_samples = 1000
-        n_features = 10
+        from psd_analysis.ml.classical import ClassicalMLClassifier
+    except ImportError as e:
+        log_fail("ML package import", f"Cannot import ml module: {e}")
+        return
 
-        X = np.random.randn(n_samples, n_features)
-        y = np.random.randint(0, 2, n_samples)
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-
-        assert len(X_train) == 800, "Train set size incorrect"
-        assert len(X_test) == 200, "Test set size incorrect"
+    # Test 1: Classifier initialization
+    test_name = "ClassicalMLClassifier initialization"
+    try:
+        clf = ClassicalMLClassifier(method='random_forest')
+        assert clf.method == 'random_forest', "Method not set correctly"
+        assert clf.model is not None, "Model not initialized"
         log_pass(test_name)
     except Exception as e:
         log_fail(test_name, str(e))
         return
 
-    # Test 2: Model training
-    test_name = "Random Forest training"
+    # Test 2: Data preparation and training
+    test_name = "ML classifier training"
     try:
-        clf = RandomForestClassifier(n_estimators=10, random_state=42, max_depth=5)
-        clf.fit(X_train, y_train)
+        # Generate synthetic data with proper columns
+        n_samples = 1000
+        df = pd.DataFrame({
+            'ENERGY': np.random.uniform(100, 2000, n_samples),
+            'ENERGYSHORT': np.random.uniform(50, 1500, n_samples),
+            'PARTICLE': np.random.choice(['gamma', 'neutron'], n_samples)
+        })
 
-        assert hasattr(clf, 'feature_importances_'), "Model should have feature importances"
-        assert len(clf.feature_importances_) == n_features, "Wrong number of importances"
+        # Add PSD column
+        from psd_analysis import calculate_psd_ratio
+        df = calculate_psd_ratio(df)
+
+        # Train classifier
+        clf = ClassicalMLClassifier(method='random_forest')
+        results = clf.train(df, test_size=0.2)
+
+        assert 'train_accuracy' in results, "Missing train_accuracy"
+        assert 'val_accuracy' in results, "Missing val_accuracy"
+        assert results['val_accuracy'] > 0, "Validation accuracy should be positive"
         log_pass(test_name)
     except Exception as e:
         log_fail(test_name, str(e))
@@ -239,26 +255,29 @@ def test_ml_pipeline():
     # Test 3: Prediction
     test_name = "ML prediction"
     try:
-        y_pred = clf.predict(X_test)
+        # Generate new test data
+        df_test = pd.DataFrame({
+            'ENERGY': np.random.uniform(100, 2000, 100),
+            'ENERGYSHORT': np.random.uniform(50, 1500, 100)
+        })
+        df_test = calculate_psd_ratio(df_test)
 
-        assert len(y_pred) == len(y_test), "Prediction length mismatch"
-        assert all(p in [0, 1] for p in y_pred), "Predictions should be 0 or 1"
+        predictions, probabilities = clf.predict(df_test)
 
-        accuracy = accuracy_score(y_test, y_pred)
-        if accuracy < 0.4:
-            log_warning(test_name, f"Low accuracy: {accuracy:.2f} (expected for random data)")
-
+        assert len(predictions) == len(df_test), "Prediction length mismatch"
+        assert all(p in [0, 1] for p in predictions), "Predictions should be 0 or 1"
+        # probabilities is 1D array of neutron probabilities
+        assert len(probabilities) == len(df_test), "Probability length incorrect"
         log_pass(test_name)
     except Exception as e:
         log_fail(test_name, str(e))
 
-    # Test 4: Feature importance
-    test_name = "Feature importance analysis"
+    # Test 4: Multiple classifier types
+    test_name = "Multiple classifier types"
     try:
-        importances = clf.feature_importances_
-
-        assert np.isclose(np.sum(importances), 1.0), "Importances should sum to 1"
-        assert all(i >= 0 for i in importances), "Importances should be non-negative"
+        for method in ['random_forest', 'gradient_boosting', 'svm', 'logistic']:
+            clf_test = ClassicalMLClassifier(method=method)
+            assert clf_test.model is not None, f"{method} model not initialized"
         log_pass(test_name)
     except Exception as e:
         log_fail(test_name, str(e))
