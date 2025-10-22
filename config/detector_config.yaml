@@ -1,0 +1,33 @@
+detector:
+  name: "PSD_Detector_001"
+  type: "Liquid Scintillator"
+  scintillator: "EJ-301"
+
+  # ADC settings
+  adc_bits: 14
+  adc_range: [0, 16383]
+  sampling_rate_mhz: 250
+  baseline_samples: 50
+
+  # PSD gates (in samples)
+  psd_gates:
+    short_gate: 20
+    long_gate: 100
+
+  # Thresholds
+  thresholds:
+    energy_min_adc: 100
+    saturation_adc: 16000
+    baseline_stability_max: 50
+
+  # Calibration
+  calibration:
+    method: "linear"  # or "polynomial"
+    last_date: "2024-10-22"
+    coefficients: [0.3642, 0.0]  # [slope, intercept] for E[keV] = slope*ADC + intercept
+
+  # Metadata
+  serial_number: "DET-001"
+  location: "Lab A"
+  pmt_voltage: 1500  # V
+  temperature: 20  # °C

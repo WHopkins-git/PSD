@@ -1,0 +1,91 @@
+# Machine Learning Configuration
+
+feature_extraction:
+  version: "enhanced_v2"  # 'basic', 'timing_v1', 'enhanced_v2', 'realtime'
+
+  # Template-based features
+  build_templates: true
+  template_neutron_events: 1000
+  template_gamma_events: 1000
+
+  # Alignment
+  align_pulses: true
+  alignment_method: "cfd_50"
+
+  # Advanced features
+  enable_wavelet: true
+  enable_hilbert: true
+  enable_gatti: true
+
+classical_ml:
+  default_method: "random_forest"
+
+  random_forest:
+    n_estimators: 200
+    max_depth: 15
+    min_samples_split: 5
+    min_samples_leaf: 2
+    max_features: "sqrt"
+    random_state: 42
+    n_jobs: -1
+
+  gradient_boosting:
+    n_estimators: 200
+    learning_rate: 0.1
+    max_depth: 5
+    subsample: 0.8
+    random_state: 42
+
+  svm:
+    kernel: "rbf"
+    C: 1.0
+    gamma: "scale"
+    probability: true
+    random_state: 42
+
+  neural_net:
+    hidden_layer_sizes: [64, 32, 16]
+    activation: "relu"
+    solver: "adam"
+    max_iter: 500
+    random_state: 42
+
+deep_learning:
+  default_model: "cnn"  # 'cnn' or 'transformer'
+  device: "auto"  # 'auto', 'cuda', 'cpu'
+
+  training:
+    epochs: 50
+    batch_size: 64
+    learning_rate: 0.001
+    use_physics_loss: true
+    physics_loss_alpha: 0.1
+    physics_loss_beta: 0.05
+
+  augmentation:
+    enabled: true
+    amplitude_jitter: 0.05
+    time_jitter: 2
+    noise_injection: true
+    gain_jitter: 0.02
+
+  cnn:
+    conv_layers: 4
+    filters: [32, 64, 128, 256]
+    kernel_sizes: [7, 5, 3, 3]
+    fc_layers: [512, 128]
+    dropout: [0.5, 0.3]
+
+validation:
+  strategy: "group_kfold"
+  group_by: "run_id"
+  n_splits: 5
+  test_size: 0.2
+  random_state: 42
+
+evaluation:
+  neutron_acceptance: 0.99
+  energy_bins:
+    - [100, 300]
+    - [300, 800]
+    - [800, 2000]

@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (large data should not be committed)
+data/calibration/*.csv
+data/norm_samples/*.csv
+data/processed/*.h5
+data/processed/*.hdf5
+
+# Model files (large trained models)
+models/*.pkl
+models/*.pt
+models/*.pth
+models/*.h5
+
+# Results and outputs
+results/figures/*.png
+results/figures/*.pdf
+results/reports/*.pdf
+results/exports/*.csv
+results/exports/*.h5
+
+# Keep directory structure with .gitkeep files
+!.gitkeep
+
+# Configuration (may contain sensitive info)
+config/*_local.yaml
+config/*_secret.yaml
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+temp/
+tmp/
